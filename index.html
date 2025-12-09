@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selenium Automation Practice Site</title>
+    <style>
+        :root { --primary: #4a90e2; --bg: #f4f4f9; --text: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 900px; background: white; margin: 20px; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--primary); }
+        .view { display: none; }
+        .active-view { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #357abd; }
+        button.secondary { background: #6c757d; }
+        .practice-section { border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: var(--primary); color: white; }
+        .hidden { display: none; }
+        #feedback { margin-top: 10px; padding: 10px; border-radius: 4px; text-align: center; }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; margin-bottom: 20px;">
+        <h1>Automation Hub</h1>
+        <div id="user-info" class="hidden">
+            Welcome, <span id="display-username" style="font-weight:bold;">User</span> 
+            <button id="logout-btn" class="secondary" style="margin-left: 10px;">Logout</button>
+        </div>
+    </header>
+
+    <div id="login-view" class="view active-view">
+        <h2>Login</h2>
+        <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Enter password">
+        </div>
+        <button id="login-btn">Login</button>
+        <p>Don't have an account? <a href="#" id="go-to-register">Register here</a></p>
+        <div id="login-feedback"></div>
+        <div style="font-size: 0.8em; color: #666; margin-top: 10px;">Default: <code>admin</code> / <code>admin123</code></div>
+    </div>
+
+    <div id="register-view" class="view">
+        <h2>Register New User</h2>
+        <form id="register-form">
+            <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" required></div>
+            <div class="form-group"><label>Username</label><input type="text" id="reg-username" required></div>
+            <div class="form-group"><label>Email</label><input type="email" id="reg-email" required></div>
+            <div class="form-group"><label>Password</label><input type="password" id="reg-password" required></div>
+            <div class="form-group">
+                <label>Gender:</label>
+                <input type="radio" name="gender" value="male" style="width:auto;"> Male
+                <input type="radio" name="gender" value="female" style="width:auto;"> Female
+            </div>
+            <div class="form-group"><input type="checkbox" id="terms-check" style="width:auto;"> I agree to Terms</div>
+            <button type="submit" id="register-btn">Register</button>
+            <button type="button" class="secondary" id="back-to-login">Back</button>
+            <div id="register-feedback" style="margin-top:10px;"></div>
+        </form>
+    </div>
+
+    <div id="dashboard-view" class="view">
+        <h2>Practice Dashboard</h2>
+        <div class="practice-section">
+            <h3>1. Web Table (User Database)</h3>
+            <p>New registrations will appear here instantly.</p>
+            <table id="user-table">
+                <thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <button id="reset-data-btn" class="secondary" style="margin-top:10px; font-size:0.8rem;">Reset to Default Data</button>
+        </div>
+        <div class="practice-section">
+            <h3>2. Dynamic Waits</h3>
+            <button id="timer-btn">Start 5s Timer</button>
+            <p id="timer-result" class="hidden" style="color:green; font-weight:bold;">Element Loaded Successfully!</p>
+        </div>
+        <div class="practice-section">
+            <h3>3. Alerts</h3>
+            <button onclick="alert('Alert Box')" id="alert-btn">Alert</button>
+            <button onclick="confirm('Confirm Box')" id="confirm-btn">Confirm</button>
+        </div>
+        <div class="practice-section">
+            <h3>4. Mouse Hover</h3>
+            <button id="hover-btn" title="Tooltip Text">Hover Over Me</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. DATA MANAGEMENT WITH LOCAL STORAGE ---
+    
+    // Default fake data
+    const defaultUsers = [
+        { id: 1, name: "Admin User", username: "admin", password: "admin123", role: "Admin" },
+        { id: 2, name: "John Doe", username: "john.doe", password: "password123", role: "User" },
+        { id: 3, name: "Jane Smith", username: "jane.s", password: "securepass", role: "User" },
+        { id: 4, name: "Alice Johnson", username: "alice.j", password: "alicepass", role: "Editor" },
+        { id: 5, name: "Bob Brown", username: "bobby", password: "bob123", role: "User" },
+        { id: 6, name: "Charlie Davis", username: "charlie", password: "password", role: "User" },
+        { id: 7, name: "Emily White", username: "emily.w", password: "ems", role: "User" },
+        { id: 8, name: "Frank Miller", username: "frankie", password: "frankpass", role: "Moderator" },
+        { id: 9, name: "Grace Lee", username: "grace.l", password: "grace123", role: "User" },
+        { id: 10, name: "Henry Wilson", username: "henry", password: "henrypass", role: "User" }
+    ];
+
+    // Load users from LocalStorage or use Default
+    function loadUsers() {
+        const stored = localStorage.getItem('selenium_users');
+        if (stored) {
+            return JSON.parse(stored);
+        }
+        return JSON.parse(JSON.stringify(defaultUsers)); // Deep copy
+    }
+
+    // Save users to LocalStorage
+    function saveUsers(userList) {
+        localStorage.setItem('selenium_users', JSON.stringify(userList));
+    }
+
+    // Initialize global users variable
+    let users = loadUsers();
+
+    // --- 2. NAVIGATION ---
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active-view'));
+        document.getElementById(viewId).classList.add('active-view');
+        
+        // Clear inputs when switching
+        document.querySelectorAll('input').forEach(i => i.value = '');
+        document.getElementById('login-feedback').innerHTML = '';
+        document.getElementById('register-feedback').innerHTML = '';
+    }
+
+    document.getElementById('go-to-register').addEventListener('click', () => showView('register-view'));
+    document.getElementById('back-to-login').addEventListener('click', () => showView('login-view'));
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('user-info').classList.add('hidden');
+        showView('login-view');
+    });
+
+    // --- 3. LOGIN LOGIC ---
+    document.getElementById('login-btn').addEventListener('click', () => {
+        // Refresh user list from storage just in case
+        users = loadUsers();
+        
+        const uVal = document.getElementById('login-username').value;
+        const pVal = document.getElementById('login-password').value;
+        const feedback = document.getElementById('login-feedback');
+
+        const user = users.find(u => u.username === uVal && u.password === pVal);
+
+        if (user) {
+            feedback.innerHTML = '<div class="success">Login Successful! Redirecting...</div>';
+            setTimeout(() => {
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('display-username').innerText = user.name;
+                populateTable();
+                showView('dashboard-view');
+            }, 800);
+        } else {
+            feedback.innerHTML = '<div class="error">Invalid username or password</div>';
+        }
+    });
+
+    // --- 4. REGISTRATION LOGIC (UPDATED) ---
+    document.getElementById('register-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newName = document.getElementById('reg-name').value;
+        const newUsername = document.getElementById('reg-username').value;
+        const newPass = document.getElementById('reg-password').value;
+        const feedback = document.getElementById('register-feedback');
+
+        // Check for duplicates
+        if (users.some(u => u.username === newUsername)) {
+            feedback.innerHTML = '<div class="error">Username already exists! Try another.</div>';
+            return;
+        }
+
+        // Create new user object
+        const newUserObj = {
+            id: users.length + 1,
+            name: newName,
+            username: newUsername,
+            password: newPass,
+            role: "User"
+        };
+
+        // 1. Add to local array
+        users.push(newUserObj);
+        
+        // 2. Save to Persistent Storage
+        saveUsers(users);
+
+        console.log("New User Registered:", newUserObj);
+        console.table(users); // Useful for debugging
+
+        feedback.innerHTML = '<div class="success">Registration Successful! Redirecting to Login...</div>';
+        
+        setTimeout(() => {
+            showView('login-view');
+        }, 1500);
+    });
+
+    // --- 5. DASHBOARD FUNCTIONS ---
+    function populateTable() {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+            tbody.innerHTML += `<tr>
+                <td>${u.id}</td>
+                <td>${u.name}</td>
+                <td>${u.username}</td>
+                <td>${u.role}</td>
+                <td><button class="secondary" onclick="alert('Deleting user ${u.id} is disabled')">Delete</button></td>
+            </tr>`;
+        });
+    }
+
+    document.getElementById('timer-btn').addEventListener('click', (e) => {
+        e.target.disabled = true;
+        e.target.innerText = "Loading...";
+        setTimeout(() => {
+            document.getElementById('timer-result').classList.remove('hidden');
+            e.target.innerText = "Done";
+        }, 5000);
+    });
+
+    // Reset Data Helper
+    document.getElementById('reset-data-btn').addEventListener('click', () => {
+        localStorage.removeItem('selenium_users');
+        users = JSON.parse(JSON.stringify(defaultUsers));
+        saveUsers(users);
+        populateTable();
+        alert("Data reset to default 10 users.");
+    });
+
+</script>
+</body>
+</html>
